@@ -1,0 +1,211 @@
+﻿
+@{
+    ViewBag.Title = "Registar";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    string dataAtual = string.Format("{0:yyyy-MM-dd}", DateTime.Now.AddDays(1));
+    string dataAtualFormatoPortugues = string.Format("{0:dd/MM/yyyy}", DateTime.Now);
+}
+
+@section Scripts{
+    <script src="~/Scripts/vue-the-mask.js"></script>
+    <script src="~/Scripts/vee-validate.js"></script>
+    <script src="~/Scripts/axios.js"></script>
+    <script>
+        Vue.use(VueTheMask);
+        Vue.use(VeeValidate, {
+            classes: true,
+            classNames: {
+                valid: 'is-valid',
+                invalid: 'is-invalid'
+            },
+            dictionary: {
+                en: {
+                    messages: {
+                        required: 'Campo obrigatório',
+                        date_format: 'Data inválida',
+                        date_between: 'A data de nascimento precisa de estar entre 01/01/1900 e @dataAtualFormatoPortugues'
+                    }
+                }
+
+            }
+        });
+
+        function ValidarCPF(strCPF) {
+            var Soma;
+            var Resto;
+            strCPF = strCPF.replace(/[^0-9]/g, '');
+            Soma = 0;
+            if (strCPF == "00000000000" || strCPF == "11111111111" || strCPF == "22222222222" || strCPF == "33333333333" || strCPF == "44444444444" ||
+                strCPF == "55555555555" || strCPF == "66666666666" || strCPF == "7777777777" || strCPF == "88888888888" || strCPF == "99999999999") return false;
+
+            for (i = 1; i <= 9; i++) Soma = Soma + parseInt(strCPF.substring(i - 1, i)) * (11 - i);
+            Resto = (Soma * 10) % 11;
+
+            if ((Resto == 10) || (Resto == 11)) Resto = 0;
+            if (Resto != parseInt(strCPF.substring(9, 10))) return false;
+
+            Soma = 0;
+            for (i = 1; i <= 10; i++) Soma = Soma + parseInt(strCPF.substring(i - 1, i)) * (12 - i);
+            Resto = (Soma * 10) % 11;
+
+            if ((Resto == 10) || (Resto == 11)) Resto = 0;
+            if (Resto != parseInt(strCPF.substring(10, 11))) return false;
+            return true;
+        }
+
+        function verificarCpfJaRegistado(cpfDigitado) {
+            axios.get('/api/pessoa/verificar-cpf-ja-registado', { params: { cpf: cpfDigitado } }).then(function (resposta) {
+                console.log(resposta);
+            });
+        }
+
+        new Vue({
+            el: '#formRegistoPessoas', // id da div que controla o formulário
+            created: function () { // é um evento, assim que a div que controla o formulário for executada dispara o evento
+                this.$validator.extend('validar-cpf', {
+                    getMessage: 'CPF inválido',
+                    validate: function (value) {
+                        return ValidarCPF(value);
+                    }
+                });
+            }
+        });
+    </script>
+}
+<h2>Registo</h2>
+
+@if (ViewBag.mensagemSucesso != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @ViewBag.mensagemSucesso
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+<div id="formRegistoPessoas">
+    <!-- div que controla o formulário-->
+    <form class="row g-3" method="post" action="/Pessoa/RegistarPost">
+        <div class="col-md-8">
+            <label for="Nome" class="form-label">Nome Completo: <span>*</span></label>
+            <input type="text" v-validate="'required'" class="form-control" id="Nome" name="Nome" maxlength="200">
+            <div class="invalid-feedback">Campo obrigatório</div>
+        </div>
+        <div class="col-md-4">
+            <label for="DataNascimento" class="form-label">Data Nascimento: <span>*</span></label>
+            <input type="date" v-validate="'required|date_format:yyyy-MM-dd|date_between:1899-12-31,@dataAtual'" class="form-control" id="DataNascimento" name="DataNascimento">
+            <div class="invalid-feedback">{{ errors.first("DataNascimento")}}</div>
+        </div>
+        <div class="col-12">
+            <label for="Endereco" class="form-label">Endereço: <span>*</span></label>
+            <input type="text" v-validate="'required'" class="form-control" id="Endereco" name="Endereco" maxlength="100">
+            <div class="invalid-feedback">Campo obrigatório</div>
+        </div>
+        <div class="col-10">
+            <label for="Complemento" class="form-label">Complemento:</label>
+            <input type="text" class="form-control" id="Complemento" name="Complemento" maxlength="30">
+        </div>
+        <div class="col-md-2">
+            <label for="Numero" class="form-label">Número: <span>*</span></label>
+            <input type="text" v-validate="'required'" class="form-control" id="Numero" name="Numero" maxlength="10">
+            <div class="invalid-feedback">Campo obrigatório</div>
+        </div>
+
+        <div class="form-row">
+            <div class="col-md-4">
+                <label for="EstadoCivil">Estado Civil: <span>*</span></label>
+                <select class="form-select" id="EstadoCivil" name="EstadoCivil" v-validate="'required'">
+                    <option selected value="">Selecione uma opção...</option>
+                    <option>Casado(a)</option>
+                    <option>Solteiro(a)</option>
+                    <option>Divorciado(a)</option>
+                    <option>Viúvo(a)</option>
+                </select>
+                <div class="invalid-feedback">Campo obrigatório</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <label for="UF" class="form-label">UF: <span>*</span></label>
+            <select id="UF" v-validate="'required'" class="form-select" name="UF">
+                <option selected value="">Selecione uma opção...</option>
+                <option value="AC">Acre</option>
+                <option value="AL">Alagoas</option>
+                <option value="AP">Amapá</option>
+                <option value="AM">Amazonas</option>
+                <option value="BA">Bahia</option>
+                <option value="CE">Ceará</option>
+                <option value="DF">Distrito Federal</option>
+                <option value="ES">Espírito Santo</option>
+                <option value="GO">Goiás</option>
+                <option value="MA">Maranhão</option>
+                <option value="MT">Mato Grosso</option>
+                <option value="MS">Mato Grosso do Sul</option>
+                <option value="MG">Minas Gerais</option>
+                <option value="PA">Pará</option>
+                <option value="PB">Paraíba</option>
+                <option value="PR">Paraná</option>
+                <option value="PE">Pernambuco</option>
+                <option value="PI">Piauí</option>
+                <option value="RJ">Rio de Janeiro</option>
+                <option value="RN">Rio Grande do Norte</option>
+                <option value="RS">Rio Grande do Sul</option>
+                <option value="RO">Rondônia</option>
+                <option value="RR">Roraima</option>
+                <option value="SC">Santa Catarina</option>
+                <option value="SP">São Paulo</option>
+                <option value="SE">Sergipe</option>
+                <option value="TO">Tocantins</option>
+            </select>
+            <div class="invalid-feedback">Campo obrigatório</div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="row">
+                <label for="SexoMasculino">Sexo: <span>*</span></label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="Sexo" id="SexoMasculino" value="M" v-validate="'required'">
+                        <label class="form-label" for="SexoMasculino">Masculino</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="Sexo" id="SexoFeminino" value="F" v-validate="'required'">
+                        <label class="form-label" for="SexoFeminino">Feminino</label>
+                    </div>
+                </div>
+            </div>
+            <div class="invalid-feedback">Campo obrigatório</div>
+        </div>
+
+
+        <div class="col-md-2">
+            <label for="CEP" class="form-label">CEP: <span>*</span></label>
+            <input type="text" class="form-control" id="CEP" name="CEP" v-mask="'#####-###'" v-validate="'required'">
+            <div class="invalid-feedback">Campo obrigatório</div>
+        </div>
+        <div class="col-md-5">
+            <label for="Bairro" class="form-label">Bairro: <span>*</span></label>
+            <input type="text" class="form-control" id="Bairro" name="Bairro" v-validate="'required'" maxlength="50">
+            <div class="invalid-feedback">Campo obrigatório</div>
+        </div>
+        <div class="col-md-5">
+            <label for="Cidade" class="form-label">Cidade: <span>*</span></label>
+            <input type="text" class="form-control" id="Cidade" name="Cidade" v-validate="'required'" maxlength="50">
+            <div class="invalid-feedback">Campo obrigatório</div>
+        </div>
+        <div class="col-md-2">
+            <label for="CPF" class="form-label">CPF: <span>*</span></label>
+            <input type="text" class="form-control" id="CPF" name="CPF" v-mask="'###.###.###.##'" v-validate="'required|validar-cpf'">
+            <div class="invalid-feedback">{{ errors.first("CPF") }}</div>
+        </div>
+
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Gravar</button>
+        </div>
+    </form>
+</div>
+
+
+
+

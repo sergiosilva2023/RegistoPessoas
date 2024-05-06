@@ -29,7 +29,7 @@ namespace RegistoPessoas.Models
 
 
         [Required]
-        [StringLength(10)]
+        [StringLength(20)]
         public string EstadoCivil { get; set; }
 
 
