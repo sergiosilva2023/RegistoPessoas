@@ -6,10 +6,19 @@
     string dataAtualFormatoPortugues = string.Format("{0:dd/MM/yyyy}", DateTime.Now);
 }
 
+@section Styles{
+    <style>
+        input[type=text]{
+            text-transform: uppercase;
+        }
+    </style>
+    }
+
 @section Scripts{
     <script src="~/Scripts/vue-the-mask.js"></script>
     <script src="~/Scripts/vee-validate.js"></script>
     <script src="~/Scripts/axios.js"></script>
+    <script src="~/Scripts/promise.js"></script>
     <script>
         Vue.use(VueTheMask);
         Vue.use(VeeValidate, {
@@ -54,8 +63,18 @@
         }
 
         function verificarCpfJaRegistado(cpfDigitado) {
-            axios.get('/api/pessoa/verificar-cpf-ja-registado', { params: { cpf: cpfDigitado } }).then(function (resposta) {
-                console.log(resposta);
+            return new Promise(function (resolve) {
+                axios.get('/api/pessoa/verificar-cpf-ja-registado', { params: { cpf: cpfDigitado } }).then(function (resposta) {
+                    resolve({
+                        valid: !resposta.data.resultado,
+                        data: 'CPF já registado!'
+                    })
+                }).catch(function () {
+                    resolve({
+                        valid: false,
+                        data: 'Erro ao validar CPF'
+                    });
+                });
             });
         }
 
@@ -68,6 +87,22 @@
                         return ValidarCPF(value);
                     }
                 });
+                this.$validator.extend('verificar-cpf-ja-registado', {
+                    getMessage: function (campo, params, data) {
+                        return data;
+                    },
+                    validate: verificarCpfJaRegistado
+                })
+            },
+            methods: {
+                guardar: function (event) {
+                    this.$validator.validateAll().then(function (valido) {
+                        if (valido) {
+                            event.target.submit();
+                            return;
+                        }
+                    });
+                }
             }
         });
     </script>
@@ -86,7 +121,7 @@
 
 <div id="formRegistoPessoas">
     <!-- div que controla o formulário-->
-    <form class="row g-3" method="post" action="/Pessoa/RegistarPost">
+    <form class="row g-3" method="post" action="@Url.RouteUrl("registarPost")" v-on:submit.prevent="guardar(event)">
         <div class="col-md-8">
             <label for="Nome" class="form-label">Nome Completo: <span>*</span></label>
             <input type="text" v-validate="'required'" class="form-control" id="Nome" name="Nome" maxlength="200">
@@ -196,12 +231,13 @@
         </div>
         <div class="col-md-2">
             <label for="CPF" class="form-label">CPF: <span>*</span></label>
-            <input type="text" class="form-control" id="CPF" name="CPF" v-mask="'###.###.###.##'" v-validate="'required|validar-cpf'">
+            <input type="text" class="form-control" id="CPF" name="CPF" v-mask="'###.###.###-##'" v-validate="'required|validar-cpf|verificar-cpf-ja-registado'">
             <div class="invalid-feedback">{{ errors.first("CPF") }}</div>
         </div>
 
         <div class="col-12">
-            <button type="submit" class="btn btn-primary">Gravar</button>
+            <button type="submit" class="btn btn-primary">Registar</button>
+            <a href="@Url.RouteUrl("listar")" class="btn btn-light">Voltar</a>
         </div>
     </form>
 </div>

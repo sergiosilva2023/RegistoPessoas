@@ -1,0 +1,109 @@
+﻿@using RegistoPessoas.ViewModels;
+@using Newtonsoft.Json;
+
+@model IEnumerable<PessoaViewModel>
+
+
+@{
+    ViewBag.Title = "Listar";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // vamos converter os dados do PessoaViewModel em json para o javascript
+    string jsonPessoas = JsonConvert.SerializeObject(Model);
+}
+
+@section Scripts{
+    <script>
+        new Vue({
+            el: '#listar',
+            data: {
+                pessoas: @Html.Raw(jsonPessoas),
+                idExclusao: null
+            },
+            methods: {
+                mostrarJanelaConfirmarExclusao: function (id) {
+                    this.idExclusao = id;
+                    $('#winConfirmarExclusao').modal('show');
+                }
+            }
+        });
+    </script>
+}
+
+
+<div class="row">
+    <div class="col-md-9">
+        <h2>Listagem</h2>
+    </div>
+    <div class="col-md-3">
+        <a href="@Url.RouteUrl("registar")" class="btn btn-primary float-end">Registar nova Pessoa</a>
+    </div>
+</div>
+
+
+<div id="listar">
+
+
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th scope="col">Nome Completo</th>
+                <th scope="col">Data de Nascimento</th>
+                <th scope="col">Sexo</th>
+                <th scope="col">Est. - Civil</th>
+                <th scope="col">CPF</th>
+                <th scope="col">CEP</th>
+                <th scope="col">Endereço</th>
+                <th scope="col">Nº</th>
+                <th scope="col">Complemento</th>
+                <th scope="col">Bairro</th>
+                <th scope="col">Cidade</th>
+                <th scope="col">UF</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+
+
+            <tr v-for="item in pessoas">
+                <td>{{item.Nome}}</td>
+                <td>{{item.DataNascimentoFormatada}}</td>
+                <td>{{item.SexoFormatado}}</td>
+                <td>{{item.EstadoCivil}}</td>
+                <td>{{item.CPFFormatado}}</td>
+                <td>{{item.CEPFormatado}}</td>
+                <td>{{item.Endereco}}</td>
+                <td>{{item.Numero}}</td>
+                <td>{{item.Complemento}}</td>
+                <td>{{item.Bairro}}</td>
+                <td>{{item.Cidade}}</td>
+                <td>{{item.UF}}</td>
+                <td>
+                    <button class="btn btn-danger" v-on:click="mostrarJanelaConfirmarExclusao(item.Id)">Excluir</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <p v-if="pessoas.length == 0">Nenhum registo encontrado!</p>
+
+    <div class="modal fade" id="winConfirmarExclusao">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-body">
+                    Deseja realmente excluir este registo!?
+                </div>
+                <div class="modal-footer">
+                    <form action="@Url.RouteUrl("excluirPost")" method="post">
+                        <input type="hidden" name="id" id="id" v-bind:value="idExclusao" />
+                        <button type="submit" class="btn btn-danger">Sim</button>
+                    </form>
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Não</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+

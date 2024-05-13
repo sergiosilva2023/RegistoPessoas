@@ -11,7 +11,38 @@ namespace RegistoPessoas.Controllers
     public class PessoaController : Controller
     {
 
-        // esta será uma action método get para obter uma informação do servidor - carregar o form para registo das Pessoas
+        [Route("", Name= "listar")]
+        public ActionResult Listar()
+        {
+            using (Conexao db = new Conexao())
+            {
+                List<Pessoa> pessoasModel = db.Pessoa.ToList();
+                List<PessoaViewModel> pessoasVms = new List<PessoaViewModel>();
+
+                foreach (Pessoa item in pessoasModel)
+                {
+                    PessoaViewModel pessoaVm = new PessoaViewModel();
+                    pessoaVm.Id = item.Id;
+                    pessoaVm.Nome = item.Nome;
+                    pessoaVm.DataNascimento = item.DataNascimento;
+                    pessoaVm.Sexo = item.Sexo;
+                    pessoaVm.EstadoCivil = item.EstadoCivil;
+                    pessoaVm.CPF = item.CPF;
+                    pessoaVm.CEP = item.CEP;
+                    pessoaVm.Endereco = item.Endereco;
+                    pessoaVm.Numero = item.Numero;
+                    pessoaVm.Complemento = item.Complemento;
+                    pessoaVm.Bairro = item.Bairro;
+                    pessoaVm.Cidade = item.Cidade;
+                    pessoaVm.UF = item.UF;
+
+                    pessoasVms.Add(pessoaVm);
+                }
+                return View(pessoasVms);
+            }
+        }
+
+        [Route("registar", Name ="registar")]// esta será uma action método get para obter uma informação do servidor - carregar o form para registo das Pessoas
         public ActionResult Registar()
         {
             if(TempData["mensagemSucesso"] != null)
@@ -22,9 +53,13 @@ namespace RegistoPessoas.Controllers
             return View();
         }
 
+
         [HttpPost] // esta será para gravar os dados com a FormCollection nos parametros
+        [Route("registar/salvar", Name="registarPost")]
         public ActionResult RegistarPost(PessoaViewModel dados)
         {
+            dados.TratarDados(); // trata os dados antes de validar
+
             dados.Validar(); // valida os dados através do método criado na classe PessoaController
 
             Pessoa model = new Pessoa();
@@ -50,6 +85,19 @@ namespace RegistoPessoas.Controllers
             TempData["mensagemSucesso"] = "Registo efetuado com sucesso!";
 
             return RedirectToAction("Registar");
+        }
+
+        [HttpPost] // esta será para excluir os dados com a FormCollection nos parametros
+        [Route("excluir", Name = "excluirPost")]
+        public ActionResult Excluir(int id)
+        {
+            using(Conexao db = new Conexao())
+            {
+                Pessoa model = db.Pessoa.First(c => c.Id == id); // O Entity Framework vai pegar no id do registo
+                db.Pessoa.Remove(model);
+                db.SaveChanges();
+            }
+            return RedirectToAction("Listar");
         }
     }
 }

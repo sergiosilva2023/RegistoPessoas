@@ -12,11 +12,12 @@ namespace RegistoPessoas
         public static void RegisterRoutes(RouteCollection routes)
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+            routes.MapMvcAttributeRoutes();
 
             routes.MapRoute(
                 name: "Default",
                 url: "{controller}/{action}/{id}",
-                defaults: new { controller = "Pessoa", action = "Registar", id = UrlParameter.Optional }
+                defaults: new { controller = "Pessoa", action = "Listar", id = UrlParameter.Optional }
             );
         }
     }

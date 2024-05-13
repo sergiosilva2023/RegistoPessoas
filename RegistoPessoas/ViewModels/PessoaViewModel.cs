@@ -2,18 +2,55 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Web;
 
 namespace RegistoPessoas.ViewModels
 {
     public class PessoaViewModel
     {
+        public int? Id { get; set; }
         public string Nome { get; set; }
         public DateTime? DataNascimento { get; set; }
+        public string DataNascimentoFormatada
+        {
+            get
+            {
+                return string.Format("{0:dd/MM/yyyy}", DataNascimento);
+            }
+        }
+
         public string Sexo { get; set; }
+        public string SexoFormatado
+        {
+            get
+            {
+                if (Sexo == "M")
+                    return "Masculino";
+                else
+                    return "Feminino";
+            }
+        }
         public string EstadoCivil { get; set; }
         public string CPF { get; set; }
+
+
+        public string CPFFormatado
+        {
+            get
+            {
+                return Convert.ToUInt64(CPF).ToString(@"000\.000\.000\-00");
+            }
+        }
         public string CEP { get; set; }
+
+        public string CEPFormatado
+        {
+            get
+            {
+                return Convert.ToUInt64(CEP).ToString(@"00000\-000");
+            }
+        }
         public string Endereco { get; set; }
         public string Numero { get; set; }
         public string Complemento { get; set; }
@@ -49,7 +86,7 @@ namespace RegistoPessoas.ViewModels
             if (string.IsNullOrWhiteSpace(EstadoCivil))
                 throw new ApplicationException(string.Format("O campo Estado Civil é obrigatório"));
 
-            if (Sexo.Length > 20)
+            if (EstadoCivil.Length > 20)
                 throw new ApplicationException("O campo Estado Civil só aceita 20 caracteres");
 
             if (string.IsNullOrWhiteSpace(CPF))
@@ -88,7 +125,7 @@ namespace RegistoPessoas.ViewModels
 
             if( !string.IsNullOrWhiteSpace(Complemento))
             {
-                if (Numero.Length > 30)
+                if (Complemento.Length > 30)
                 throw new ApplicationException("O campo Complemento só aceita até 30 caracteres");
             }
 
@@ -114,47 +151,68 @@ namespace RegistoPessoas.ViewModels
 
         }
 
-
-        public bool ValidarCPF(string cpf)
+        public void TratarDados()
         {
-            int[] multiplicador1 = new int[9] { 10, 9, 8, 7, 6, 5, 4, 3, 2 };
-            int[] multiplicador2 = new int[10] { 11, 10, 9, 8, 7, 6, 5, 4, 3, 2 };
+            Nome = Nome?.ToUpper().Trim();
+            CPF = Regex.Replace(CPF, "[^0-9]", string.Empty);
+            CEP = Regex.Replace(CEP, "[^0-9]", string.Empty);
+            Endereco = Endereco?.ToUpper().Trim();
+            Numero = Numero?.ToUpper().Trim();
+            Complemento = Complemento?.ToUpper().Trim();  // o ponto de interrogação ? serve para aceitar os dados null
+            Bairro = Bairro?.ToUpper().Trim();
+            Cidade = Cidade?.ToUpper().Trim();
+        }
+        public bool ValidarCPF(string vrCPF)
+        {
+            string valor = vrCPF.Replace(".", "");
+            valor = valor.Replace("-", "");
 
-            cpf = cpf.Trim().Replace(".", "").Replace("-", "");
-
-            if (cpf.Length != 11)
+            if (valor.Length != 11)
                 return false;
 
-            string tempCpf = cpf.Substring(0, 9);
+            bool igual = true;
+
+            for (int i = 1; i < 11 && igual; i++)
+                if (valor[i] != valor[0])
+                    igual = false;
+
+            if (igual || valor == "123456789")
+                return false;
+            int[] numeros = new int[11];
+
+            for (int i = 0; i < 11; i++)
+                numeros[i] = int.Parse(
+                    valor[i].ToString());
             int soma = 0;
-
             for (int i = 0; i < 9; i++)
-                soma += int.Parse(tempCpf[i].ToString()) * multiplicador1[i];
+                soma += (10 - 1) * numeros[i];
 
-            int resto = soma % 11;
-            if (resto < 2)
-                resto = 0;
-            else
-                resto = 11 - resto;
+            int resultado = soma % 11;
+            if (resultado == 1 || resultado == 0)
+            {
+                if (numeros[9] != 0)
+                    return false;
+            }
 
-            string digito = resto.ToString();
-            tempCpf = tempCpf + digito;
+            else if (numeros[9] != 11 - resultado)
+                return false;
+
             soma = 0;
-
             for (int i = 0; i < 10; i++)
-                soma += int.Parse(tempCpf[i].ToString()) * multiplicador2[i];
+                soma += (11 - i) * numeros[i];
 
-            resto = soma % 11;
-            if (resto < 2)
-                resto = 0;
-            else
-                resto = 11 - resto;
+            resultado = soma % 11;
 
-            digito = digito + resto.ToString();
+            if (resultado == 1 || resultado == 0)
+            {
+                if (numeros[10] != 0)
+                    return false;
+            }
 
-            return cpf.EndsWith(digito);
+            else if (numeros[10] != 11 - resultado)
+                return false;
+
+            return true;
         }
-
-
     }
 }
